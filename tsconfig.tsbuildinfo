@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/controller/admincontroller.ts","./src/utils/hash.ts","./src/utils/jwt.ts"],"version":"5.8.2"}
