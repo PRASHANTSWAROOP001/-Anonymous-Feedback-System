@@ -41,4 +41,4 @@ const validateAdmin= (req:AuthenticatedRequest,res:Response, next:NextFunction)=
 
 }
 
-export {validateAdmin}
+export {validateAdmin , AuthenticatedRequest}
