@@ -30,6 +30,13 @@ app.get("/", (req:Request, res: Response)=>{
     })
 })
 
+app.get("/debugRoute",(req:Request,res:Response)=>{
+    res.status(201).json({
+        db:process.env.DATABASE_URL,
+        jwt:process.env.JWT_SECRET
+    })
+})
+
 app.use("/auth", adminAuthRoute);
 app.use("/email", emailAddRoute);
 app.use("/topic", topicRoute);
