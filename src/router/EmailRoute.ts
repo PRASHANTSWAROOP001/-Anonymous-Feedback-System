@@ -14,7 +14,7 @@ interface MulterRequest extends Request {
      
 }
 
-router.post("/uploadFile",validateAdmin, upload.single("fileName"),parseEmail,saveEmails)
+router.post("/uploadFile",validateAdmin, upload.single("file"),parseEmail,saveEmails)
 
 router.post("/sendEmails/:id",validateAdmin, sendEmails);
 
