@@ -1,7 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
-import { hashPassword, comparePassword } from "../utils/hash"
-import { generateToken, verifyToken } from "../utils/jwt"
-import { Request, Response, NextFunction } from "express";
+import { hashPassword } from "../utils/hash"
+import { Request, Response} from "express";
 import { z } from "zod"
 
 
@@ -82,87 +81,12 @@ const addAdmin = async (req: Request, res: Response):Promise<any> => {
 }
 
 
-const adminLoginSchema = z.object({
-    email: z.string().email("Email is not correct"),
-    password: z.string().min(6, "No password shall be less than 6 letters")
-})
-
-
-// type loginDTO = z.infer<typeof adminLoginSchema>
-
-
-const loginAdmin = async (req: Request, res: Response):Promise<any> => {
-
-    try {
-
-        const validateLogin = adminLoginSchema.parse(req.body);
-
-        const userDetails = await prisma.admin.findUnique({
-            where: {
-                email: validateLogin.email
-            }
-        })
-
-        if (!userDetails) {
-            return res.status(404).json({
-                success: false,
-                message: "User could not be found for entered email"
-            })
-        }
-
-        const hashedDbPassword: string = userDetails.password;
-
-        const isPasswordMatched: boolean = await comparePassword(hashedDbPassword, validateLogin.password);
-
-        if (!isPasswordMatched) {
-            return res.status(400).json({
-                success: false,
-                message: "Password does not match."
-            })
-        }
-        else {
-            const token = generateToken({
-                name: userDetails.name,
-                id: userDetails.id,
-                email: userDetails.email
-            });
-
-            return res.status(200).json({
-                success: true,
-                message: "You are verified now",
-                token: token
-            })
-        }
-
-
-    } catch (error) {
-
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-            console.error("Prisma Error", error.message);
-            return res.status(500).json({
-                success: false,
-                message: "internal server error happend at our side."
-            })
-        }
-        else if (error instanceof z.ZodError) {
-            console.error("validation failed for data");
-            return res.status(400).json({
-                success: false,
-                message: "Data is not valid"
-            })
-        }
-        else {
-            console.error("Some error happend", error);
-            return res.status(500).json({
-                success: false,
-                message: "internal server error happend at our side."
-            })
-
-        }
-    }
-
-}
 
 
 
-export {addAdmin, loginAdmin}
+
+
+
+
+
+export {addAdmin}

@@ -37,10 +37,15 @@ const sendEmails = async (req: AuthenticatedRequest, res: Response):Promise<any>
         }
 
         // Fetch emails and tokens
-        const emailsList = await prisma.email.findMany({
-            where: { topicId: parseInt(topicId) },
-            select: { email: true },
-        });
+        const emailsList = (
+            await prisma.topic.findUnique({
+              where: { id: parseInt(topicId) },
+              select: {
+                emails: { select: { email: true } },
+              },
+            })
+          )?.emails.map(e => e.email) || [];
+
 
         const tokenList = await prisma.token.findMany({
             where: { topicId: parseInt(topicId) },
@@ -72,8 +77,8 @@ const sendEmails = async (req: AuthenticatedRequest, res: Response):Promise<any>
         });
 
         // Send emails concurrently
-        const emailPromises = emailsList.map(async (emailObj, index) => {
-            const currEmail = emailObj.email;
+        const emailPromises = emailsList.map(async (email, index) => {
+            const currEmail = email;
             const correspondingToken = tokenList[index]?.token;
 
             if (!correspondingToken) {

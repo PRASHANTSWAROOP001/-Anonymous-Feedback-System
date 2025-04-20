@@ -26,6 +26,8 @@ model Admin {
 
   emails Email[] // admin can now add multiple emails 
 
+  tokens RefreshToken[] // one admin can have multiple refresh tokens
+  session Session[]
 }
 
 model Topic{
@@ -37,7 +39,7 @@ model Topic{
   admin Admin @relation(fields: [adminId],references: [id] )
   tokens Token[] // using topic now we should be able to get to the Tokens
   feedbacks Feedback[] // access to feedback table
-  emails Email[]
+  emails Email[] @relation("EmailTopics")
 }
 
 model Email{
@@ -46,9 +48,7 @@ model Email{
   name String?
   adminId Int
   admin Admin @relation(fields: [adminId] ,references: [id])
-  topicId Int
-
-  topic Topic @relation(fields: [topicId], references: [id])
+  topics Topic[] @relation("EmailTopics")
 
 }
 
@@ -69,4 +69,30 @@ model Feedback{
   review String
   topicId Int
   topic Topic @relation(fields: [topicId], references: [id])
+}
+
+
+model RefreshToken{
+  id String @id @default(uuid())
+  adminId Int
+  admin Admin @relation(fields: [adminId], references: [id])
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revoked Boolean @default(false)
+}
+
+
+model Session {
+  id String @id @default(uuid())
+  refreshToken String @unique
+  adminId Int
+  admin Admin @relation(fields: [adminId], references: [id])
+
+  ipAddress String?
+  userAgent String?
+  location String?
+  createdAt DateTime @default(now())
+  expiredAt DateTime
+  revoked Boolean @default(false)
+  revokedAt DateTime?
 }

@@ -69,7 +69,11 @@ const addTokensToDatabase = async (req: AuthenticatedRequest, res: Response) => 
 
         const countEmails = await prisma.email.count({
             where: {
-                topicId: parseInt(topicId)
+                topics:{
+                    some:{
+                        id:parseInt(topicId)
+                    }
+                }
             }
         })
 

@@ -1,6 +1,7 @@
 import express, {Request, Response} from "express";
 import cors from "cors"
 import dotenv from "dotenv"
+import cookieParser from "cookie-parser";
 
 import adminAuthRoute from "./router/AuthRoute"
 import emailAddRoute from "./router/EmailRoute"
@@ -17,6 +18,8 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors())
 app.use(express.json())
+
+app.use(cookieParser());
 
 app.listen(PORT, ()=>{
 
