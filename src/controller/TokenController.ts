@@ -271,7 +271,7 @@ const updateToken = async (req:FeedbackWithTokenId, res:Response)=>{
     }
 }
 
-export {addTokensToDatabase, loginUsingToken , updateToken}
+export {addTokensToDatabase, loginUsingToken , updateToken, createNToken}
 
 
 

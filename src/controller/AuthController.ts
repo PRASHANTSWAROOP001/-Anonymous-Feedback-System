@@ -181,5 +181,79 @@ const logoutAdmin = async (req:Request, res:Response)=>{
 
 }
 
+const renewAccessToken = async (req:Request, res:Response)=>{
+  try {
 
-export {loginAdmin, logoutAdmin}
+    const refreshToken = req.cookies.refreshToken;
+
+    if(!refreshToken){
+      res.status(400).json({
+        success:false,
+        message:"Refresh Token in unavilable"
+      })
+      return;
+    }
+
+    const validateRefreshToken = await prisma.refreshToken.findUnique({
+      where:{
+        id:refreshToken
+      }
+    })
+
+    if(!validateRefreshToken){
+      res.status(400).json({
+        success:false,
+        message:"Invalid refresh token!"
+      })
+      return;
+    }
+    else if(validateRefreshToken.revoked == true ||validateRefreshToken.expiresAt <= new Date()){
+      res.status(400).json({
+        success:false,
+        message:"Expired or already used refresh tokens. Please login again."
+      })
+      return;
+    }
+
+    const adminDetails = await prisma.admin.findUnique({
+      where:{
+        id:validateRefreshToken.adminId
+      }
+    })
+
+    const accessToken = jwt.sign(
+      {
+        name: adminDetails?.name,
+        id: validateRefreshToken.adminId,
+        email: adminDetails?.email,
+      },
+      JWT_SECRET,
+      {
+        algorithm: "HS256",
+        issuer: "ADMIN",
+        expiresIn: "15m",
+      }
+    );
+
+    res.json({
+      success:true,
+      message:"Token generated successfully",
+      accessToken
+    })
+
+    
+  } catch (error) {
+
+    console.error("Error happend while refreshing access token", error);
+
+    res.status(500).json({
+      success:false,
+      message:"Internal server error happend at our end"
+    })
+    
+  }
+}
+
+
+
+export {loginAdmin, logoutAdmin, renewAccessToken}

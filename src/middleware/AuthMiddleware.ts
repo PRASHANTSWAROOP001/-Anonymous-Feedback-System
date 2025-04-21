@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { JwtPayload } from "jsonwebtoken";
+import { JwtPayload, decode } from "jsonwebtoken";
 import { verifyToken } from "../utils/jwt";
 
 interface AuthenticatedRequest extends Request{
-    user?: string | JwtPayload
+    user?: string | JwtPayload,
 }
 
 
@@ -23,6 +23,20 @@ const validateAdmin= (req:AuthenticatedRequest,res:Response, next:NextFunction)=
         }
 
         const validatedToken = verifyToken(token);
+
+
+        const decodedToken = decode(token) as JwtPayload;
+
+        if(decodedToken.exp && decodedToken.exp*1000 <=  Date.now()){
+
+            res.status(400).json({
+                success:false,
+                message:"access token is expired."
+            })
+
+            return;
+
+        }
 
         req.user = validatedToken;
 

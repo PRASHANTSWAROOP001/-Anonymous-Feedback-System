@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import {decode, JwtPayload } from "jsonwebtoken";
-import { any } from "zod";
+import { JwtPayload } from "jsonwebtoken";
+
+import { createNToken } from "../controller/TokenController";
+import { parse } from "path";
 
 
 interface RequestWithPayload extends Request{
@@ -21,7 +23,16 @@ const prisma = new PrismaClient();
 const saveEmails = async (req:RequestWithPayload, res:Response)=>{
     try {
    
-        const id:number = req.user?.id
+        const id:number = req.user?.id!
+
+        const topicId = req.params.id; // to create and save tokens 
+
+        if(!topicId){
+            res.status(400).json({
+                success:false,
+                message:"To send emails in next process. it needs topicId as params."
+            })
+        }
 
         const emailsWithTopics = req.emailsWithTopics
 
@@ -34,23 +45,71 @@ const saveEmails = async (req:RequestWithPayload, res:Response)=>{
             adminId: id,
         }))
 
-        const response = await prisma.email.createMany({
-           data: dataToInsert as any,
-           skipDuplicates:true
+        await prisma.$transaction(async(tx)=>{
+
+            for (const entry of dataToInsert){
+               const email = await tx.email.upsert({
+                    where:{
+                        email: entry.email
+                    },
+                    update:{
+                        name:entry.name
+                    },
+                    create:{
+                        email:entry.email,
+                        name:entry.name,
+                        admin: {connect: {id: entry.adminId}} //adminId:entry.adminId
+                    }
+                })
+
+                await tx.email.update({
+                    where:{
+                        id:email.id
+                    },
+                    data:{
+                        topics: {connect: {id: parseInt(topicId)}}
+                    }
+                })
+            }
+
+            const emailCount = await tx.email.count({
+                where:{
+                    topics:{
+                        some:{
+                            id: parseInt(topicId)
+                        }
+                    }
+                }
+            })
+            
+            // generateTokens against emails
+            const nTokens = await createNToken(emailCount);
+
+            // mapout tokens to save in database
+            const tokenToInsert = nTokens.map((val)=>({
+                token:val,
+                topicId:parseInt(topicId),
+                expiresAt:new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            }))
+
+            // save tokens to database
+
+            await tx.token.createMany({
+                data: tokenToInsert,
+            })
+
+
         })
-
-
-        console.log("response at saveEmails", response);
     
         res.status(200).json({
             success:true,
-            message:"Data added successfully in database."
+            message:"Emails and Tokens are successfully added to database 🥳"
         })
 
    
     } catch (error) {
         
-        console.error("Error happend while saving emails", error);
+        console.error("Error happend at processing transaction 😔", error);
         res.status(500).json({
             success:false,
             message:"Internal server error"
