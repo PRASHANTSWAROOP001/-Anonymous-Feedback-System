@@ -120,82 +120,88 @@ const addTokensToDatabase = async (req: AuthenticatedRequest, res: Response) => 
 }
 
 
-const loginUsingToken = async (req:Request, res:Response) =>{
+const loginUsingToken = async (req: Request, res: Response):Promise<void> => {
     try {
-
-        const validateLoginDetails = userLoginSchema.parse(req.body)
-
-        const search_email = await prisma.email.findUniqueOrThrow({
-            where:{
-                email:validateLoginDetails.email
-            }
-        })
-
-        const search_token =await prisma.token.findUniqueOrThrow({
-            where:{
-                token:validateLoginDetails.token
-            }
-        })
-
-        if(search_email && search_token){
-
-            const currentDate = new Date();
-
-            const expiryDate = search_token.expiresAt
-
-            if ( currentDate > expiryDate){
-                res.status(409).json({
-                    success:false,
-                    message:"We are no longer accepting the feedback. Feeback time is over."
-                })
-                return;
-            }
-            else if(search_token.isUsed == false){
-
-                res.json({
-                    success:true,
-                    message:"You are logged in successfully",
-                    tokenId:search_token.id,
-                    topicId:search_token.topicId
-                })
-                // store tokenId and topicId in frontend 
-            }
-
-
-        }
-        else{
-
-            res.status(400).json({
-                success:false,
-                message:"Auth failure against token and emails provided."
-            })
-
-            return
-
-        }
-        
+      const { email, token } = userLoginSchema.parse(req.body);
+  
+      const [searchEmail, searchToken] = await Promise.all([
+        prisma.email.findUnique({ where: { email } }),
+        prisma.token.findUnique({ where: { token } }),
+      ]);
+  
+      if (!searchEmail || !searchToken) {
+         res.status(400).json({
+          success: false,
+          message: "Auth failure against token and email provided.",
+        });
+        return;
+      }
+  
+      // Check token expiry
+      if (new Date() > searchToken.expiresAt) {
+        res.status(409).json({
+          success: false,
+          message: "We are no longer accepting feedback. Feedback time is over.",
+        });
+        return;
+      }
+  
+      // Check if token is used
+      if (searchToken.isUsed) {
+        res.status(409).json({
+          success: false,
+          message: "Token has already been used to submit feedback.",
+        });
+        return;
+      }
+  
+      // Check if email is associated with the topic from token
+      const isAssociated = await prisma.email.findFirst({
+        where: {
+          id: searchEmail.id,
+          topics: {
+            some: { id: searchToken.topicId },
+          },
+        },
+      });
+  
+      if (!isAssociated) {
+        res.status(401).json({
+          success: false,
+          message: "You are not allowed to submit feedback to this topic.",
+        });
+        return;
+      }
+  
+      // All good
+       res.json({
+        success: true,
+        message: "Logged in successfully",
+        tokenId: searchToken.id,
+        topicId: searchToken.topicId,
+      });
+  
     } catch (error) {
-        
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-            console.error("Prisma Error", error.message);
-            res.status(500).json({
-                success: false,
-                message: "internal server error happend at our side."
-            })
-            return;
-        }
-        else {
-            console.error("Some error happend", error);
-            res.status(500).json({
-                success: false,
-                message: "internal server error happend at our side."
-            })
-            return;
-        }
+      console.error("Error during token login:", error);
+  
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+         res.status(500).json({
+          success: false,
+          message: "Internal server error happened at our side (DB)",
+        });
 
+        return;
+      }
+  
+      res.status(500).json({
+        success: false,
+        message: "Internal server error happened at our side.",
+      });
 
+      return;
     }
-}
+  };
+  
 
 //middleware to update the token to isUsed = True and returns the status
 
