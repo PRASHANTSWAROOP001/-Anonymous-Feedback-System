@@ -120,6 +120,15 @@ Contributions are welcome! Please follow these steps:
 
 This project is licensed under the [MIT License](LICENSE).
 
+## Documentation
+
+- 📬 **API Documentation (Postman)**  
+  Access the full API documentation here: [Postman Collection](https://documenter.getpostman.com/view/38176982/2sB2j1gXe1)
+
+- 📝 **Related Blog Post**  
+  Learn more about how and why this project was built in this detailed blog post: [Read the blog](https://iodized-chicken-170.notion.site/Anonymous-Feedback-Backend-Application-1e1a25b101b6809a89f2c688e4877a83?pvs=74)
+
+
 ## Contact
 
 For any questions or feedback, please contact [your-email@example.com](mailto:your-email@example.com).
